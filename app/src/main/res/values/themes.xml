@@ -1,17 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-<<<<<<< HEAD
     <style name="Base.Theme.Everything_mobile" parent="Theme.Material3.DayNight.NoActionBar">
-=======
-    <style name="Base.Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar">
->>>>>>> e5564e6 (everything)
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
     </style>
 
-<<<<<<< HEAD
     <style name="Theme.Everything_mobile" parent="Base.Theme.Everything_mobile" />
-=======
-    <style name="Theme.MyApplication" parent="Base.Theme.MyApplication" />
->>>>>>> e5564e6 (everything)
 </resources>
