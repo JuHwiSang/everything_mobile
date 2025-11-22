@@ -34,6 +34,6 @@ interface FileDao {
     @Query("SELECT * FROM files ORDER BY lastModified DESC")
     suspend fun getAllFiles(): List<FileEntity>
 
-    @Query("SELECT * FROM files WHERE path LIKE '%' || :query || '%' ORDER BY lastModified DESC")
+    @Query("SELECT * FROM files WHERE filename LIKE '%' || :query || '%' ORDER BY lastModified DESC")
     suspend fun searchFiles(query: String): List<FileEntity>
 }

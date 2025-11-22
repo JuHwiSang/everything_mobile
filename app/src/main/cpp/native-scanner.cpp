@@ -17,6 +17,7 @@ const int TYPE_DIRECTORY = 1;
 const int TYPE_SYMLINK = 2;
 
 struct FileInfo {
+    std::string filename;
     std::string path;
     long long mtime;
     long long size;
@@ -91,10 +92,10 @@ void scanIterative(const std::string& rootPath) {
             // DB 비교 및 리스트 추가 로직
             auto it = dbSnapshot.find(fullPath);
             if (it == dbSnapshot.end()) {
-                inserts.push_back({fullPath, (long long)st.st_mtim.tv_sec, (long long)st.st_size, type});
+                inserts.push_back({entry->d_name, fullPath, (long long)st.st_mtim.tv_sec, (long long)st.st_size, type});
             } else {
                 if (it->second != st.st_mtim.tv_sec) {
-                    updates.push_back({fullPath, (long long)st.st_mtim.tv_sec, (long long)st.st_size, type});
+                    updates.push_back({entry->d_name, fullPath, (long long)st.st_mtim.tv_sec, (long long)st.st_size, type});
                 }
                 dbSnapshot.erase(it);
             }
@@ -151,9 +152,13 @@ Java_com_example_everything_1mobile_data_files_FileScanner_nativeScanDiff(
         deletes.push_back(pair.first);
     }
 
-    // --- JNI 결과 변환 (이전과 동일) ---
     jclass fileEntityClass = env->FindClass("com/example/everything_mobile/data/files/FileEntity");
-    jmethodID fileConstructor = env->GetMethodID(fileEntityClass, "<init>", "(Ljava/lang/String;JJI)V");
+
+    // [수정 1] 생성자 시그니처 변경
+    // 기존: (Ljava/lang/String;JJI)V  -> (String(path), long, long, int)
+    // 변경: (Ljava/lang/String;Ljava/lang/String;JJI)V -> (String(filename), String(path), long, long, int)
+    //                               ^^^^^^^^^^^^^^^^^^ String이 하나 더 추가됨
+    jmethodID fileConstructor = env->GetMethodID(fileEntityClass, "<init>", "(Ljava/lang/String;Ljava/lang/String;JJI)V");
 
     jclass arrayListClass = env->FindClass("java/util/ArrayList");
     jmethodID arrayListInit = env->GetMethodID(arrayListClass, "<init>", "()V");
@@ -163,20 +168,34 @@ Java_com_example_everything_1mobile_data_files_FileScanner_nativeScanDiff(
     jobject updateList = env->NewObject(arrayListClass, arrayListInit);
     jobject deleteList = env->NewObject(arrayListClass, arrayListInit);
 
-    // Insert
+    // [수정 2] Insert 루프 수정 (filename 추가)
     for (const auto& item : inserts) {
+        jstring name = env->NewStringUTF(item.filename.c_str()); // filename 문자열 생성
         jstring path = env->NewStringUTF(item.path.c_str());
-        jobject entity = env->NewObject(fileEntityClass, fileConstructor, path, item.mtime, item.size, (jint)item.fileType);
+
+        // 생성자에 name을 첫 번째 인자로 전달
+        jobject entity = env->NewObject(fileEntityClass, fileConstructor, name, path, item.mtime, item.size, (jint)item.fileType);
+
         env->CallBooleanMethod(insertList, arrayListAdd, entity);
+
+        // 메모리 해제 (name도 해제해야 함!)
+        env->DeleteLocalRef(name);
         env->DeleteLocalRef(path);
         env->DeleteLocalRef(entity);
     }
 
-    // Update
+    // [수정 3] Update 루프 수정 (filename 추가)
     for (const auto& item : updates) {
+        jstring name = env->NewStringUTF(item.filename.c_str()); // filename 문자열 생성
         jstring path = env->NewStringUTF(item.path.c_str());
-        jobject entity = env->NewObject(fileEntityClass, fileConstructor, path, item.mtime, item.size, (jint)item.fileType);
+
+        // 생성자에 name을 첫 번째 인자로 전달
+        jobject entity = env->NewObject(fileEntityClass, fileConstructor, name, path, item.mtime, item.size, (jint)item.fileType);
+
         env->CallBooleanMethod(updateList, arrayListAdd, entity);
+
+        // 메모리 해제
+        env->DeleteLocalRef(name);
         env->DeleteLocalRef(path);
         env->DeleteLocalRef(entity);
     }
