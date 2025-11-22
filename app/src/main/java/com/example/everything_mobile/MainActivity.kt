@@ -22,9 +22,21 @@ import android.provider.Settings
 import android.widget.EditText
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doOnTextChanged
 import com.example.everything_mobile.R
+import com.example.everything_mobile.data.files.FileEntity
+
+fun FileEntity.toFileData(): FileData {
+    return FileData(
+        name = this.filename,
+        details = this.path,
+        isFolder = this.fileType == FileEntity.TYPE_DIRECTORY
+    )
+}
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var fileManager: FileManager
+    private lateinit var appDatabase: AppDatabase
 
     private val PERMISSION_REQUEST_CODE = 1001
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +64,17 @@ class MainActivity : AppCompatActivity() {
         val adapter = FileAdapter(testData)
         recyclerView.adapter = adapter
         recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this) // 리스트 모양 결정
+
+        appDatabase = AppDatabase.getInstance(this);
+        fileManager = FileManager(appDatabase.fileDao())
+
+        val etSearch = findViewById<EditText>(R.id.etSearch)
+        etSearch.doOnTextChanged { text, start, before, count ->
+            lifecycleScope.launch {
+                val files = fileManager.searchFiles(text.toString())
+                adapter.updateData(files.map { entity -> entity.toFileData() });
+            }
+        }
 
         // 권한 체크 실행
         checkAndRequestPermissions()
@@ -119,9 +142,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun startFileScan() {
         // TODO: 여기서 JNI를 통해 C++ 네이티브 스캔 함수를 호출
-        val appDatabase = AppDatabase.getInstance(this);
-        val fileManager = FileManager(appDatabase.fileDao())
-
         lifecycleScope.launch {
             fileManager.scanAndSync()
         }

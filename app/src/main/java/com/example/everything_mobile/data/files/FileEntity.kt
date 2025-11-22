@@ -2,6 +2,7 @@ package com.example.everything_mobile.data.files
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.File
 
 @Entity(tableName = "files")
 data class FileEntity(
@@ -17,4 +18,6 @@ data class FileEntity(
         const val TYPE_DIRECTORY = 1
         const val TYPE_SYMLINK = 2
     }
+
+    val filename: String get() = File(path).name
 }

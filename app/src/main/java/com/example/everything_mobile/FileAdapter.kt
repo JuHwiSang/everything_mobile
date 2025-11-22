@@ -7,10 +7,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.everything_mobile.R
+import com.example.everything_mobile.data.files.FileEntity
 
 data class FileData(val name: String, val details: String, val isFolder: Boolean)
 
-class FileAdapter(private val fileList: List<FileData>) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
+class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
 
     class FileViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvFileName: TextView = view.findViewById(R.id.tvFileName)
@@ -36,4 +37,9 @@ class FileAdapter(private val fileList: List<FileData>) : RecyclerView.Adapter<F
     }
 
     override fun getItemCount() = fileList.size
+
+    fun updateData(newItems: List<FileData>) {
+        this.fileList = newItems
+        notifyDataSetChanged()
+    }
 }
