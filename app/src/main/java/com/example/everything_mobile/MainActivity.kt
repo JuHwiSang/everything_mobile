@@ -1,7 +1,9 @@
 package com.example.everything_mobile
 
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -10,6 +12,17 @@ import androidx.lifecycle.lifecycleScope
 import com.example.everything_mobile.data.AppDatabase
 import com.example.everything_mobile.data.files.FileManager
 import kotlinx.coroutines.launch
+
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.Settings
+import android.widget.EditText
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.example.everything_mobile.R
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,30 +55,6 @@ class MainActivity : AppCompatActivity() {
 
         // 권한 체크 실행
         checkAndRequestPermissions()
-
-        val appDatabase = AppDatabase.getInstance(this);
-        val fileManager = FileManager(appDatabase.fileDao())
-        lifecycleScope.launch {
-            fileManager.scanAndSync()
-
-//            val query = "CI"
-//            val results = fileManager.searchFiles(query) // 또는 dao.searchFiles(query)
-//
-//            // 3. 로그 찍기 (스마트하게)
-//            Log.d("TEST", "=== 검색 결과: '$query' ===")
-//            Log.d("TEST", "총 개수: ${results.size}개") // 일단 개수부터 확인
-//
-//            // [주의] 리스트 전체를 toString()하면 로그 잘림.
-//            // 앞부분 10개만 눈으로 확인하는 게 국룰.
-//            results.take(10).forEach { file ->
-//                Log.d("TEST", "발견: $file")
-//                // data class라서 "FileEntity(path=..., size=...)" 이렇게 예쁘게 나옴
-//            }
-//
-//            if (results.size > 10) {
-//                Log.d("TEST", "... 외 ${results.size - 10}개 더 있음")
-//            }
-        }
     }
 
     private fun checkAndRequestPermissions() {
@@ -130,6 +119,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun startFileScan() {
         // TODO: 여기서 JNI를 통해 C++ 네이티브 스캔 함수를 호출
-        // nativeScanner.scanAndSyncDB()
+        val appDatabase = AppDatabase.getInstance(this);
+        val fileManager = FileManager(appDatabase.fileDao())
+
+        lifecycleScope.launch {
+            fileManager.scanAndSync()
+        }
     }
 }

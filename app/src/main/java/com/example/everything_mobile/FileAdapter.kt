@@ -1,5 +1,13 @@
 package com.example.everything_mobile
 
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.example.everything_mobile.R
+
 data class FileData(val name: String, val details: String, val isFolder: Boolean)
 
 class FileAdapter(private val fileList: List<FileData>) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
