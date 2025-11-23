@@ -6,10 +6,18 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.everything_mobile.R
-import com.example.everything_mobile.data.files.FileEntity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-data class FileData(val name: String, val details: String, val isFolder: Boolean)
+// ★ 수정됨: 정렬을 위해 크기와 날짜를 숫자로 받음
+data class FileData(
+    val name: String,
+    val size: Long,      // 바이트 단위 크기 (폴더면 0)
+    val date: Long,      // 타임스탬프 날짜
+    val path: String,
+    val isFolder: Boolean
+)
 
 class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
     var onItemClick: ((FileData) -> Unit)? = null
@@ -28,12 +36,29 @@ class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<F
     override fun onBindViewHolder(holder: FileViewHolder, position: Int) {
         val item = fileList[position]
         holder.tvFileName.text = item.name
-        holder.tvFileDetail.text = item.details
 
-        if (item.isFolder) {
-            holder.ivIcon.setImageResource(R.drawable.ic_folder) // 노란 폴더
+        // ★ 추가됨: 날짜와 크기를 보기 좋게 변환하는 로직
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(item.date))
+        
+        val sizeText = if (item.isFolder) {
+            "폴더"
         } else {
-            holder.ivIcon.setImageResource(R.drawable.ic_file)   // 회색 파일
+            // 바이트를 MB, KB로 변환
+            when {
+                item.size >= 1024 * 1024 -> String.format("%.1f MB", item.size / (1024.0 * 1024.0))
+                item.size >= 1024 -> String.format("%.1f KB", item.size / 1024.0)
+                else -> "${item.size} B"
+            }
+        }
+
+        // 화면에 "크기, 날짜" 형태로 표시
+        holder.tvFileDetail.text = "$sizeText • $dateFormat"
+
+        // 아이콘 설정
+        if (item.isFolder) {
+            holder.ivIcon.setImageResource(R.drawable.ic_folder)
+        } else {
+            holder.ivIcon.setImageResource(R.drawable.ic_file)
         }
 
         holder.itemView.setOnClickListener {
@@ -43,8 +68,9 @@ class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<F
 
     override fun getItemCount() = fileList.size
 
-    fun updateData(newItems: List<FileData>) {
-        this.fileList = newItems
+    // ★ 추가됨: 정렬된 리스트로 갈아끼우는 함수
+    fun updateList(newList: List<FileData>) {
+        fileList = newList
         notifyDataSetChanged()
     }
 }

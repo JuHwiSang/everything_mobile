@@ -22,13 +22,13 @@ class FileManager constructor(
         fileDao.applyDiff(diffResult)
     }
 
-    suspend fun searchFiles(query: String? = ""): List<FileEntity> {
+    suspend fun searchFiles(query: String? = "", sortMode: Int = 0): List<FileEntity> {
         return if (query.isNullOrBlank()) {
-            fileDao.getAllFiles()
+            fileDao.getAllFiles(sortMode)
         } else if (query.length < 3) { // FTS5는 3글지 이하의, 1글자나 2글자 검색을 못함
-            fileDao.searchFiles(query)
+            fileDao.searchFiles(query, sortMode)
         } else {
-            fileDao.searchFilesFts(query)
+            fileDao.searchFilesFts(query, sortMode)
         }
     }
 }

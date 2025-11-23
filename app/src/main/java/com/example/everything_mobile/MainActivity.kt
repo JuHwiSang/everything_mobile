@@ -2,7 +2,6 @@ package com.example.everything_mobile
 
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +11,8 @@ import androidx.lifecycle.lifecycleScope
 import com.example.everything_mobile.data.AppDatabase
 import com.example.everything_mobile.data.files.FileManager
 import kotlinx.coroutines.launch
+import android.widget.ImageButton // 추가
+import androidx.appcompat.app.AlertDialog // 추가
 
 import android.Manifest
 import android.content.ActivityNotFoundException
@@ -22,13 +23,11 @@ import android.os.Environment
 import android.provider.Settings
 import android.webkit.MimeTypeMap
 import android.widget.EditText
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.core.widget.doOnTextChanged
-import com.example.everything_mobile.R
 import com.example.everything_mobile.data.files.FileEntity
 import java.io.File
 import java.net.URLEncoder
@@ -36,7 +35,9 @@ import java.net.URLEncoder
 fun FileEntity.toFileData(): FileData {
     return FileData(
         name = this.filename,
-        details = this.path,
+        size = this.size,
+        date = this.lastModified,
+        path = this.path,
         isFolder = this.fileType == FileEntity.TYPE_DIRECTORY
     )
 }
@@ -49,6 +50,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etSearch: EditText
 
     private val PERMISSION_REQUEST_CODE = 1001
+
+    private var fileList = listOf<FileData>()
+    private var currentSortMode = 0 // 0:이름, 1:크기, 2:날짜
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -74,9 +79,9 @@ class MainActivity : AppCompatActivity() {
         adapter = FileAdapter(listOf<FileData>())
         adapter.onItemClick = { clickedItem ->
             if (clickedItem.isFolder) {
-                openDirectory(clickedItem.details)
+                openDirectory(clickedItem.path)
             } else {
-                openFile(clickedItem.details)
+                openFile(clickedItem.path)
 //                val file = File(clickedItem.details)
 //
 //                // 2. 그 파일의 '부모 폴더'를 찾습니다.
@@ -102,6 +107,12 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 refreshListView()
             }
+        } 
+
+        // ★ 추가된 부분: 정렬 버튼 연결
+        val btnSort = findViewById<ImageButton>(R.id.btnSort)
+        btnSort.setOnClickListener {
+            showSortDialog()
         }
 
         // 권한 체크 실행
@@ -177,8 +188,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     suspend private fun refreshListView() {
-        adapter.updateData(
-            fileManager.searchFiles(etSearch.text.toString())
+        adapter.updateList(
+            fileManager.searchFiles(etSearch.text.toString(), currentSortMode)
                 .map { entity -> entity.toFileData() }
         )
     }
@@ -225,7 +236,8 @@ class MainActivity : AppCompatActivity() {
 
         // 1. MIME Type 알아내기
         val extension = file.extension.lowercase() // 확장자 추출 (소문자로)
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "*/*" // 못 찾으면 모든 타입(*/*)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+            ?: "*/*" // 못 찾으면 모든 타입(*/*)
 
         // 2. Intent 생성 (ACTION_VIEW)
         val intent = Intent(Intent.ACTION_VIEW)
@@ -247,5 +259,18 @@ class MainActivity : AppCompatActivity() {
             // 해당 파일을 열 수 있는 앱이 설치되어 있지 않은 경우
             Toast.makeText(this, "이 파일을 열 수 있는 앱이 없습니다.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // 1. 정렬 팝업창 띄우기
+    private fun showSortDialog() {
+        val options = arrayOf("이름 순", "날짜 순 (최신)", "크기 순 (큰 것부터)")
+        
+        AlertDialog.Builder(this)
+            .setTitle("정렬 기준 선택")
+            .setSingleChoiceItems(options, currentSortMode) { dialog, which ->
+                currentSortMode = which
+                dialog.dismiss()
+            }
+            .show()
     }
 }
