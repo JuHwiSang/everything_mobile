@@ -22,7 +22,7 @@ class FileManager constructor(
         fileDao.applyDiff(diffResult)
     }
 
-    suspend fun searchFiles(query: String?): List<FileEntity> {
+    suspend fun searchFiles(query: String? = ""): List<FileEntity> {
         return if (query.isNullOrBlank()) {
             fileDao.getAllFiles()
         } else if (query.length < 3) { // FTS5는 3글지 이하의, 1글자나 2글자 검색을 못함

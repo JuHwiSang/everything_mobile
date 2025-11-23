@@ -44,6 +44,9 @@ fun FileEntity.toFileData(): FileData {
 class MainActivity : AppCompatActivity() {
     private lateinit var fileManager: FileManager
     private lateinit var appDatabase: AppDatabase
+    private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
+    private lateinit var adapter: FileAdapter
+    private lateinit var etSearch: EditText
 
     private val PERMISSION_REQUEST_CODE = 1001
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,17 +61,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 1. RecyclerView 찾아오기
-        val recyclerView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvFileList)
+        recyclerView = findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvFileList)
 
         // 2. 가짜 데이터 만들기 (테스트용)
-        val testData = listOf(
-            FileData("내 문서", "폴더 • 2025-11-21", true),
-            FileData("과제.docx", "1.2MB • 2025-11-20", false),
-            FileData("여행사진.jpg", "4.5MB • 2025-10-24", false)
-        )
+//        val testData = listOf(
+//            FileData("내 문서", "폴더 • 2025-11-21", true),
+//            FileData("과제.docx", "1.2MB • 2025-11-20", false),
+//            FileData("여행사진.jpg", "4.5MB • 2025-10-24", false)
+//        )
 
         // 3. 어댑터 연결하기
-        val adapter = FileAdapter(testData)
+        adapter = FileAdapter(listOf<FileData>())
         adapter.onItemClick = { clickedItem ->
             if (clickedItem.isFolder) {
                 openDirectory(clickedItem.details)
@@ -94,11 +97,10 @@ class MainActivity : AppCompatActivity() {
         appDatabase = AppDatabase.getInstance(this);
         fileManager = FileManager(appDatabase.fileDao())
 
-        val etSearch = findViewById<EditText>(R.id.etSearch)
+        etSearch = findViewById<EditText>(R.id.etSearch)
         etSearch.doOnTextChanged { text, start, before, count ->
             lifecycleScope.launch {
-                val files = fileManager.searchFiles(text.toString())
-                adapter.updateData(files.map { entity -> entity.toFileData() });
+                refreshListView()
             }
         }
 
@@ -170,7 +172,15 @@ class MainActivity : AppCompatActivity() {
         // TODO: 여기서 JNI를 통해 C++ 네이티브 스캔 함수를 호출
         lifecycleScope.launch {
             fileManager.scanAndSync()
+            refreshListView()
         }
+    }
+
+    suspend private fun refreshListView() {
+        adapter.updateData(
+            fileManager.searchFiles(etSearch.text.toString())
+                .map { entity -> entity.toFileData() }
+        )
     }
 
     private fun openDirectory(path: String) {
