@@ -32,7 +32,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "everything-db" // DB 파일 이름
                 )
                     .openHelperFactory(SupportOpenHelperFactory(ByteArray(0)))
-                    .fallbackToDestructiveMigration(true) // 나중에 스키마 바꾸면 DB 초기화 (개발때 편함)
+//                    .fallbackToDestructiveMigration(true) // 나중에 스키마 바꾸면 DB 초기화 (개발때 편함)
                     .addCallback(ftsTriggerCallback)
                     .build()
 
