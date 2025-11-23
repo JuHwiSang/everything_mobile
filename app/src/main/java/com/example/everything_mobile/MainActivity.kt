@@ -14,17 +14,24 @@ import com.example.everything_mobile.data.files.FileManager
 import kotlinx.coroutines.launch
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
+import android.webkit.MimeTypeMap
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.core.widget.doOnTextChanged
 import com.example.everything_mobile.R
 import com.example.everything_mobile.data.files.FileEntity
+import java.io.File
+import java.net.URLEncoder
 
 fun FileEntity.toFileData(): FileData {
     return FileData(
@@ -62,6 +69,25 @@ class MainActivity : AppCompatActivity() {
 
         // 3. 어댑터 연결하기
         val adapter = FileAdapter(testData)
+        adapter.onItemClick = { clickedItem ->
+            if (clickedItem.isFolder) {
+                openDirectory(clickedItem.details)
+            } else {
+                openFile(clickedItem.details)
+//                val file = File(clickedItem.details)
+//
+//                // 2. 그 파일의 '부모 폴더'를 찾습니다.
+//                // 예: "/storage/emulated/0/Download"
+//                val parentDir = file.parentFile
+//
+//                if (parentDir != null && parentDir.exists()) {
+//                    Log.d("onCreate open", "open parent directory: ${parentDir.path}")
+//                    openDirectory(parentDir.path)
+//                }
+            }
+
+        }
+
         recyclerView.adapter = adapter
         recyclerView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this) // 리스트 모양 결정
 
@@ -144,6 +170,72 @@ class MainActivity : AppCompatActivity() {
         // TODO: 여기서 JNI를 통해 C++ 네이티브 스캔 함수를 호출
         lifecycleScope.launch {
             fileManager.scanAndSync()
+        }
+    }
+
+    private fun openDirectory(path: String) {
+        // 1. "내장 메모리 기본 경로" (/storage/emulated/0/) 를 잘라냅니다.
+        // 결과 예시: DCIM/Camera
+        val rootPath = Environment.getExternalStorageDirectory().path
+        var relativePath = path.removePrefix(rootPath)
+
+        // 경로 앞에 붙은 '/' 제거 (혹시 있다면)
+        if (relativePath.startsWith("/")) {
+            relativePath = relativePath.substring(1)
+        }
+
+        // 2. 안드로이드 시스템이 알아먹는 포맷으로 변경
+        // 포맷: content://com.android.externalstorage.documents/document/primary:폴더명
+        // 주의: URL 인코딩이 필요함 (띄어쓰기나 특수문자 처리)
+        val encodedPath = URLEncoder.encode(relativePath, "UTF-8").replace("+", "%20")
+        val uriString = "content://com.android.externalstorage.documents/document/primary:$encodedPath"
+        val uri = uriString.toUri()
+
+        // 3. 인텐트 실행
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.setDataAndType(uri, "vnd.android.document/directory") // 표준 폴더 MIME 타입
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            // 만약 표준 방식이 안 먹히면 Samsung 전용 방식 등으로 시도 (Fallback)
+            // 하지만 위 방식이 대부분의 'Files by Google'이나 'Samsung MyFiles'에서 작동함
+            e.printStackTrace()
+        }
+    }
+
+    private fun openFile(path: String) {
+        val file = File(path)
+
+        if (!file.exists()) {
+            Toast.makeText(this, "파일이 존재하지 않습니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // 1. MIME Type 알아내기
+        val extension = file.extension.lowercase() // 확장자 추출 (소문자로)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "*/*" // 못 찾으면 모든 타입(*/*)
+
+        // 2. Intent 생성 (ACTION_VIEW)
+        val intent = Intent(Intent.ACTION_VIEW)
+
+        // 3. URI 생성 (FileProvider 사용 필수!)
+        // 주의: "com.example.yourapp.provider" 부분은 AndroidManifest의 authorities와 일치해야 합니다.
+        val authority = "${packageName}.provider"
+        val uri = FileProvider.getUriForFile(this, authority, file)
+
+        // 4. 데이터와 타입 설정 및 권한 부여
+        intent.setDataAndType(uri, mimeType)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) // 외부 앱이 이 파일을 읽을 수 있도록 허용
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // 필요시 태스크 분리
+
+        // 5. 앱 실행 시도
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            // 해당 파일을 열 수 있는 앱이 설치되어 있지 않은 경우
+            Toast.makeText(this, "이 파일을 열 수 있는 앱이 없습니다.", Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -12,6 +12,7 @@ import com.example.everything_mobile.data.files.FileEntity
 data class FileData(val name: String, val details: String, val isFolder: Boolean)
 
 class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
+    var onItemClick: ((FileData) -> Unit)? = null
 
     class FileViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvFileName: TextView = view.findViewById(R.id.tvFileName)
@@ -33,6 +34,10 @@ class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<F
             holder.ivIcon.setImageResource(R.drawable.ic_folder) // 노란 폴더
         } else {
             holder.ivIcon.setImageResource(R.drawable.ic_file)   // 회색 파일
+        }
+
+        holder.itemView.setOnClickListener {
+            onItemClick?.invoke(item)
         }
     }
 
