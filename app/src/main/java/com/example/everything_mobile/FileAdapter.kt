@@ -38,7 +38,7 @@ class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<F
         holder.tvFileName.text = item.name
 
         // ★ 추가됨: 날짜와 크기를 보기 좋게 변환하는 로직
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(item.date))
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(item.date * 1000)) // sec -> milisec
         
         val sizeText = if (item.isFolder) {
             "폴더"

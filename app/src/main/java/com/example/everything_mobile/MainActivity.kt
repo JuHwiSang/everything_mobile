@@ -270,6 +270,10 @@ class MainActivity : AppCompatActivity() {
             .setSingleChoiceItems(options, currentSortMode) { dialog, which ->
                 currentSortMode = which
                 dialog.dismiss()
+
+                lifecycleScope.launch {
+                    refreshListView()
+                }
             }
             .show()
     }
