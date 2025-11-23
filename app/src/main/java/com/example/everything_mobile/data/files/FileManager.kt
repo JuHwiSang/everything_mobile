@@ -1,5 +1,7 @@
 package com.example.everything_mobile.data.files
 
+import android.util.Log
+
 // DAO와 Scanner를 둘 다 알고 있는 유일한 녀석
 class FileManager constructor(
     private val fileDao: FileDao

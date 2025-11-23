@@ -187,7 +187,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    suspend private fun refreshListView() {
+    private suspend fun refreshListView() {
         adapter.updateList(
             fileManager.searchFiles(etSearch.text.toString(), currentSortMode)
                 .map { entity -> entity.toFileData() }

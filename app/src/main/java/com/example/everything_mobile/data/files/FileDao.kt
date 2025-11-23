@@ -39,7 +39,7 @@ interface FileDao {
         SELECT * FROM files 
         ORDER BY 
             -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
-            fileType DESC, 
+            CASE WHEN :sortMode = 0 THEN fileType END DESC, 
             
             -- 2순위: 선택한 모드에 따른 정렬
             CASE WHEN :sortMode = 0 THEN filename END ASC,       -- 0: 이름 (가나다순)
@@ -61,7 +61,7 @@ interface FileDao {
         WHERE fts.filename MATCH :query
         ORDER BY 
             -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
-            f.fileType DESC, 
+            CASE WHEN :sortMode = 0 THEN f.fileType END DESC,
             
             -- 2순위: 선택한 모드에 따른 정렬
             CASE WHEN :sortMode = 0 THEN f.filename END ASC,       -- 0: 이름 (가나다순)
@@ -73,18 +73,17 @@ interface FileDao {
     """)
     suspend fun searchFilesFts(query: String, sortMode: Int = 0): List<FileEntity>
 
-    @SkipQueryVerification
     @Query("""
         SELECT f.* FROM files AS f
         WHERE f.filename LIKE '%' || :query || '%'
         ORDER BY 
             -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
-            f.fileType DESC, 
+            (CASE WHEN :sortMode = 0 THEN f.fileType END) DESC,
             
             -- 2순위: 선택한 모드에 따른 정렬
-            CASE WHEN :sortMode = 0 THEN f.filename END ASC,       -- 0: 이름 (가나다순)
-            CASE WHEN :sortMode = 1 THEN f.size END DESC,          -- 1: 크기 (큰것부터)
-            CASE WHEN :sortMode = 2 THEN f.lastModified END DESC,  -- 2: 날짜 (최신부터)
+            (CASE WHEN :sortMode = 1 THEN f.size END) DESC,          -- 1: 크기 (큰것부터)
+            (CASE WHEN :sortMode = 0 THEN f.filename END) ASC,       -- 0: 이름 (가나다순)
+            (CASE WHEN :sortMode = 2 THEN f.lastModified END) DESC,  -- 2: 날짜 (최신부터)
             
             -- 3순위: 값이 같거나 나머지 경우 이름순 보정
             f.filename ASC
