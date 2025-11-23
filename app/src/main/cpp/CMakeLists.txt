@@ -19,3 +19,5 @@ find_library(
 target_link_libraries(
         native-scanner
         ${log-lib})
+
+target_link_options(native-scanner PRIVATE "-Wl,-z,max-page-size=16384")
