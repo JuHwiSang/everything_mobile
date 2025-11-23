@@ -8,8 +8,8 @@ import java.io.File
 data class FileEntity(
     // 파일 경로가 고유 ID(PK) 역할
     @PrimaryKey
-    val filename: String,
     val path: String,
+    val filename: String,
     val lastModified: Long,
     val size: Long,
     val fileType: Int
