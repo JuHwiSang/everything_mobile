@@ -25,8 +25,10 @@ class FileManager constructor(
     suspend fun searchFiles(query: String?): List<FileEntity> {
         return if (query.isNullOrBlank()) {
             fileDao.getAllFiles()
-        } else {
+        } else if (query.length < 3) { // FTS5는 3글지 이하의, 1글자나 2글자 검색을 못함
             fileDao.searchFiles(query)
+        } else {
+            fileDao.searchFilesFts(query)
         }
     }
 }

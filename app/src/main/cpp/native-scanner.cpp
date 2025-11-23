@@ -174,7 +174,7 @@ Java_com_example_everything_1mobile_data_files_FileScanner_nativeScanDiff(
         jstring path = env->NewStringUTF(item.path.c_str());
 
         // 생성자에 name을 첫 번째 인자로 전달
-        jobject entity = env->NewObject(fileEntityClass, fileConstructor, name, path, item.mtime, item.size, (jint)item.fileType);
+        jobject entity = env->NewObject(fileEntityClass, fileConstructor, path, name, item.mtime, item.size, (jint)item.fileType);
 
         env->CallBooleanMethod(insertList, arrayListAdd, entity);
 
@@ -190,7 +190,7 @@ Java_com_example_everything_1mobile_data_files_FileScanner_nativeScanDiff(
         jstring path = env->NewStringUTF(item.path.c_str());
 
         // 생성자에 name을 첫 번째 인자로 전달
-        jobject entity = env->NewObject(fileEntityClass, fileConstructor, name, path, item.mtime, item.size, (jint)item.fileType);
+        jobject entity = env->NewObject(fileEntityClass, fileConstructor, path, name, item.mtime, item.size, (jint)item.fileType);
 
         env->CallBooleanMethod(updateList, arrayListAdd, entity);
 

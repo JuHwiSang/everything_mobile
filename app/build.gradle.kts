@@ -68,4 +68,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.core:core-ktx:1.12.0")
+
+    implementation("net.zetetic:sqlcipher-android:4.6.1")
+    implementation("androidx.sqlite:sqlite:2.4.0")
 }

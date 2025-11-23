@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.SkipQueryVerification
 import androidx.room.Transaction
 import androidx.room.Update
 import com.example.everything_mobile.data.files.FileEntity
@@ -53,20 +54,42 @@ interface FileDao {
     /**
      * @param sortMode 정렬 모드 (0:이름, 1:크기, 2:날짜)
      */
+    @SkipQueryVerification
     @Query("""
-        SELECT * FROM files 
-        WHERE (:query IS NULL OR :query = '' OR filename LIKE '%' || :query || '%')
+        SELECT f.* FROM files AS f
+        JOIN files_fts AS fts ON f.path = fts.path
+        WHERE fts.filename MATCH :query
         ORDER BY 
             -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
-            fileType DESC, 
+            f.fileType DESC, 
             
             -- 2순위: 선택한 모드에 따른 정렬
-            CASE WHEN :sortMode = 0 THEN filename END ASC,       -- 0: 이름 (가나다순)
-            CASE WHEN :sortMode = 1 THEN size END DESC,          -- 1: 크기 (큰것부터)
-            CASE WHEN :sortMode = 2 THEN lastModified END DESC,  -- 2: 날짜 (최신부터)
+            CASE WHEN :sortMode = 0 THEN f.filename END ASC,       -- 0: 이름 (가나다순)
+            CASE WHEN :sortMode = 1 THEN f.size END DESC,          -- 1: 크기 (큰것부터)
+            CASE WHEN :sortMode = 2 THEN f.lastModified END DESC,  -- 2: 날짜 (최신부터)
             
             -- 3순위: 값이 같거나 나머지 경우 이름순 보정
-            filename ASC
+            f.filename ASC
+    """)
+    suspend fun searchFilesFts(query: String, sortMode: Int = 0): List<FileEntity>
+
+    @SkipQueryVerification
+    @Query("""
+        SELECT f.* FROM files AS f
+        WHERE f.filename LIKE '%' || :query || '%'
+        ORDER BY 
+            -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
+            f.fileType DESC, 
+            
+            -- 2순위: 선택한 모드에 따른 정렬
+            CASE WHEN :sortMode = 0 THEN f.filename END ASC,       -- 0: 이름 (가나다순)
+            CASE WHEN :sortMode = 1 THEN f.size END DESC,          -- 1: 크기 (큰것부터)
+            CASE WHEN :sortMode = 2 THEN f.lastModified END DESC,  -- 2: 날짜 (최신부터)
+            
+            -- 3순위: 값이 같거나 나머지 경우 이름순 보정
+            f.filename ASC
     """)
     suspend fun searchFiles(query: String, sortMode: Int = 0): List<FileEntity>
+
+
 }
