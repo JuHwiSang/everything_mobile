@@ -1,5 +1,6 @@
 package com.example.everything_mobile
 
+import android.view.ContextMenu
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,11 +22,24 @@ data class FileData(
 
 class FileAdapter(private var fileList: List<FileData>) : RecyclerView.Adapter<FileAdapter.FileViewHolder>() {
     var onItemClick: ((FileData) -> Unit)? = null
+    var onItemLongClick: ((FileData, ContextMenu) -> Unit)? = null
 
-    class FileViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class FileViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvFileName: TextView = view.findViewById(R.id.tvFileName)
         val tvFileDetail: TextView = view.findViewById(R.id.tvFileDetail)
         val ivIcon: ImageView = view.findViewById(R.id.ivIcon)
+
+        init {
+            // 롱 클릭 리스너 설정
+            itemView.setOnCreateContextMenuListener { menu, v, menuInfo ->
+                // 클릭된 뷰와 위치(position)를 밖으로 전달
+                val currentPos = bindingAdapterPosition
+                if (currentPos != RecyclerView.NO_POSITION) {
+                    val item = fileList[bindingAdapterPosition]
+                    onItemLongClick?.invoke(item, menu)
+                }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FileViewHolder {

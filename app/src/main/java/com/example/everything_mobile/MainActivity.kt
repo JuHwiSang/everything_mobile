@@ -93,7 +93,20 @@ class MainActivity : AppCompatActivity() {
 //                    openDirectory(parentDir.path)
 //                }
             }
+        }
 
+        adapter.onItemLongClick = { clickedItem, menu ->
+            if (!clickedItem.isFolder) {
+                menu.add(0, 0, 0, "파일 열기").setOnMenuItemClickListener {
+                    openFile(clickedItem.path)
+                    true
+                }
+
+                menu.add(0, 1, 1, "파일 위치 열기").setOnMenuItemClickListener {
+                    openParentDirectory(clickedItem.path)
+                    true
+                }
+            }
         }
 
         recyclerView.adapter = adapter
@@ -258,6 +271,13 @@ class MainActivity : AppCompatActivity() {
         } catch (e: ActivityNotFoundException) {
             // 해당 파일을 열 수 있는 앱이 설치되어 있지 않은 경우
             Toast.makeText(this, "이 파일을 열 수 있는 앱이 없습니다.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun openParentDirectory(path: String) {
+        val parent = File(path).parent
+        if (!parent.isNullOrBlank()) {
+            openDirectory(parent)
         }
     }
 
