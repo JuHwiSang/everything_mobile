@@ -4,6 +4,10 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="10dp"
+    android:background="#FFFFFF"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
     android:gravity="center_vertical">
 
     <ImageView
