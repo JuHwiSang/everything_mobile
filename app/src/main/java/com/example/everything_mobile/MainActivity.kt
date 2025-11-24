@@ -283,7 +283,7 @@ class MainActivity : AppCompatActivity() {
 
     // 1. 정렬 팝업창 띄우기
     private fun showSortDialog() {
-        val options = arrayOf("이름 순", "날짜 순 (최신)", "크기 순 (큰 것부터)")
+        val options = arrayOf("이름 순", "크기 순 (큰 것부터)", "날짜 순 (최신)")
         
         AlertDialog.Builder(this)
             .setTitle("정렬 기준 선택")
