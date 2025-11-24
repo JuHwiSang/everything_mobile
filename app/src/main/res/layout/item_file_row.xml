@@ -44,6 +44,16 @@
             android:textColor="#888888"
             android:ellipsize="end"
             android:maxLines="1"/>
+        <TextView
+            android:id="@+id/tvFilePath"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="/storage/emulated/0/Download/..."
+            android:textSize="11sp"
+            android:textColor="#A0A0A0"
+            android:layout_marginTop="2dp"
+            android:ellipsize="middle"
+            android:singleLine="true" />
     </LinearLayout>
 
     <ImageView
