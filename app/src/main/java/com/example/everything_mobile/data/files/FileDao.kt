@@ -11,84 +11,73 @@ import com.example.everything_mobile.data.files.FileEntity
 import com.example.everything_mobile.data.files.ScanResult
 
 @Dao
-interface FileDao {
+abstract class FileDao { // interface -> abstract class 변경
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(files: List<FileEntity>)
+    abstract suspend fun insertAll(files: List<FileEntity>) // abstract 추가
 
     @Update
-    suspend fun updateAll(files: List<FileEntity>)
+    abstract suspend fun updateAll(files: List<FileEntity>) // abstract 추가
 
     @Query("DELETE FROM files WHERE path IN (:paths)")
-    suspend fun deleteByPaths(paths: List<String>)
+    abstract suspend fun deleteByPaths(paths: List<String>) // abstract 추가
 
     @Query("SELECT * FROM files")
-    suspend fun getAllFilesSync(): List<FileEntity>
+    abstract suspend fun getAllFilesSync(): List<FileEntity> // abstract 추가
 
-    // [핵심] 이 메서드 하나로 트랜잭션 처리 끝
+    // 로직이 있는 함수는 open/final 상관없음 (그대로 둠)
     @Transaction
-    suspend fun applyDiff(result: ScanResult) {
+    open suspend fun applyDiff(result: ScanResult) {
         if (result.toInsert.isNotEmpty()) insertAll(result.toInsert)
         if (result.toUpdate.isNotEmpty()) updateAll(result.toUpdate)
         if (result.toDelete.isNotEmpty()) deleteByPaths(result.toDelete)
     }
 
-    /**
-     * @param sortMode 정렬 모드 (0:이름, 1:크기, 2:날짜)
-     */
     @Query("""
         SELECT * FROM files 
         ORDER BY 
-            -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
             CASE WHEN :sortMode = 0 THEN fileType END DESC, 
-            
-            -- 2순위: 선택한 모드에 따른 정렬
-            CASE WHEN :sortMode = 0 THEN filename END ASC,       -- 0: 이름 (가나다순)
-            CASE WHEN :sortMode = 1 THEN size END DESC,          -- 1: 크기 (큰것부터)
-            CASE WHEN :sortMode = 2 THEN lastModified END DESC,  -- 2: 날짜 (최신부터)
-            
-            -- 3순위: 값이 같거나 나머지 경우 이름순 보정
+            CASE WHEN :sortMode = 0 THEN filename END ASC,
+            CASE WHEN :sortMode = 1 THEN size END DESC,
+            CASE WHEN :sortMode = 2 THEN lastModified END DESC,
             filename ASC
     """)
-    suspend fun getAllFiles(sortMode: Int = 0): List<FileEntity>
+    abstract suspend fun getAllFiles(sortMode: Int = 0): List<FileEntity> // abstract 추가
 
-    /**
-     * @param sortMode 정렬 모드 (0:이름, 1:크기, 2:날짜)
-     */
+    // [수정됨] 1. 외부에서 호출하는 안전한 래퍼 함수
+    suspend fun searchFilesFts(query: String, sortMode: Int = 0): List<FileEntity> {
+        // 입력값을 따옴표로 감싸서 FTS 문법 에러(크래시) 방지
+        // 내부에 "가 있으면 ""로 이스케이프 처리
+        val safeQuery = "\"${query.replace("\"", "\"\"")}\""
+
+        // 바인딩 파라미터로 넘기므로 SQL Injection 안전함
+        return _searchFilesFtsInternal(safeQuery, sortMode)
+    }
+
+    // [수정됨] 2. 실제 쿼리 (protected abstract로 변경, 이름 변경)
     @SkipQueryVerification
     @Query("""
         SELECT f.* FROM files AS f
         JOIN files_fts AS fts ON f.path = fts.path
-        WHERE fts.filename MATCH :query
+        WHERE fts.filename MATCH :safeQuery
         ORDER BY 
-            -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
             CASE WHEN :sortMode = 0 THEN f.fileType END DESC,
-            
-            -- 2순위: 선택한 모드에 따른 정렬
-            CASE WHEN :sortMode = 0 THEN f.filename END ASC,       -- 0: 이름 (가나다순)
-            CASE WHEN :sortMode = 1 THEN f.size END DESC,          -- 1: 크기 (큰것부터)
-            CASE WHEN :sortMode = 2 THEN f.lastModified END DESC,  -- 2: 날짜 (최신부터)
-            
-            -- 3순위: 값이 같거나 나머지 경우 이름순 보정
+            CASE WHEN :sortMode = 0 THEN f.filename END ASC,
+            CASE WHEN :sortMode = 1 THEN f.size END DESC,
+            CASE WHEN :sortMode = 2 THEN f.lastModified END DESC,
             f.filename ASC
     """)
-    suspend fun searchFilesFts(query: String, sortMode: Int = 0): List<FileEntity>
+    protected abstract suspend fun _searchFilesFtsInternal(safeQuery: String, sortMode: Int): List<FileEntity>
 
     @Query("""
         SELECT f.* FROM files AS f
         WHERE f.filename LIKE '%' || :query || '%'
         ORDER BY 
-            -- 1순위: 폴더 우선 정렬 (1=Directory, 0=File 이므로 내림차순)
             (CASE WHEN :sortMode = 0 THEN f.fileType END) DESC,
-            
-            -- 2순위: 선택한 모드에 따른 정렬
-            (CASE WHEN :sortMode = 1 THEN f.size END) DESC,          -- 1: 크기 (큰것부터)
-            (CASE WHEN :sortMode = 0 THEN f.filename END) ASC,       -- 0: 이름 (가나다순)
-            (CASE WHEN :sortMode = 2 THEN f.lastModified END) DESC,  -- 2: 날짜 (최신부터)
-            
-            -- 3순위: 값이 같거나 나머지 경우 이름순 보정
+            (CASE WHEN :sortMode = 1 THEN f.size END) DESC,
+            (CASE WHEN :sortMode = 0 THEN f.filename END) ASC,
+            (CASE WHEN :sortMode = 2 THEN f.lastModified END) DESC,
             f.filename ASC
     """)
-    suspend fun searchFiles(query: String, sortMode: Int = 0): List<FileEntity>
-
-
+    abstract suspend fun searchFiles(query: String, sortMode: Int = 0): List<FileEntity> // abstract 추가
 }
